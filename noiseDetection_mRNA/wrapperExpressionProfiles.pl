@@ -12,5 +12,5 @@ closedir(DIR);
 print "number of samples to work with: $#files\n";
 
 system("perl p2pPCC_perlVersion.pl allSeries.expression $#files matrix.pcc matrix.abn");
-
+system("Rscript noiseDetection.R");
 exit;

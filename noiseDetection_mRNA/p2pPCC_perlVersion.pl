@@ -63,8 +63,6 @@ while(<in>)
 				}
 				$meanSample = $meanSample/$transcriptLength;
 
-				#print "mean sample: $meanSample\n";
-
 				$#pcc= -1;				
 				for($i = 0; $i < $sCt; $i++)
 				{
@@ -76,7 +74,13 @@ while(<in>)
 							$mean2 = $mean2 + $profiles[$i][$k];
 						}
 						$mean2 = $mean2/$transcriptLength;
+
+						$meanSample  = int($meanSample * 100) / 100;
+						$mean2 = int($mean2 * 100) / 100;
+						
+						#print "mean sample: $meanSample\n";
 						#print "for sample $i the mean is $mean2\n";
+						
 						if($mean2 == 0)
 						{
 							$r = 0;
@@ -90,8 +94,15 @@ while(<in>)
 								$denominator1 = $denominator1 + ($profiles[$j][$k]-$meanSample)*($profiles[$j][$k]-$meanSample);
 								$denominator2 = $denominator2 + ($profiles[$i][$k]-$mean2)*($profiles[$i][$k]-$mean2);
 							}
+							$numerator = int($numerator * 100) / 100;
+							$denominator1 = int($denominator1 * 100) / 100;
+							$denominator2 = int($denominator2 * 100) / 100;
+							
 							$r = $numerator/(sqrt($denominator1)*sqrt($denominator2));
+							$r = int($r * 100) / 100;
 						}
+						#print "num = $numerator, den1: $denominator1, den2: $denominator2\n";
+						#sleep(1);
 						#print "with sample $i the pcc is $r\n";
 						
 						push @pcc, [($r)];
@@ -104,7 +115,7 @@ while(<in>)
 					#print "pcc[$i] is $pcc[$i][0]\n";
 					$meanPCC = $meanPCC + $pcc[$i][0];
 				}
-				$meanPCC = $meanPCC / $#pcc;
+				$meanPCC = $meanPCC / ($#pcc + 1);
 
 				$abnVector[$j] = $maxY;
 				$pccVector[$j] = $meanPCC;

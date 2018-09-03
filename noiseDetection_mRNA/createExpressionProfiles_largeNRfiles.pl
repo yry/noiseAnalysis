@@ -13,8 +13,9 @@ closedir(DIR);
 
 foreach $file (@files) 
 {
-	print "working with $file\n";
+	print "\n\n\nworking with $file\n";
 	system("date");
+	$#seqs = -1;
 	
 	@f = split(/\./,$file);
 	$patmFile = $f[0].".patman";

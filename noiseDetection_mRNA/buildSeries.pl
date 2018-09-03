@@ -2,20 +2,35 @@
 ##collate all single sample expression profiles
 ##this will be intput for the p2p PCC
 
+sub trim($);
+# Perl trim function to remove whitespace from the start and end of the string
+sub trim($)
+{
+	my $string = shift;
+	$string =~ s/^\s+//;
+	$string =~ s/\s+$//;
+	return $string;
+}
+
 $usage = "perl build series.pl out";
 $out = shift or die $usage;
 
 opendir(DIR, ".");
-@files = grep(/\final.expression$/,readdir(DIR));
+@files = grep(/\_final.expression$/,readdir(DIR));
 closedir(DIR);
 
 print "number of samples to be combine: $#files\n";
 
+##maintain a file with the order of the samples
+open cc, ">combinedOrder.csv"
+	or die "cannot open combinedOrder.csv";
+
 $i = 0;
 foreach $file (@files) 
 {
+	print cc "$file\n";
 	print "working with $file\n";
-	system("date");
+#	system("date");
 	
 	open f, $file
 		or die "cannot open $file\n";
@@ -23,12 +38,13 @@ foreach $file (@files)
 	{
 		chomp;
 		@d = split(/,/);
-		push @profiles, [($i,$d[0],$d[1],$d[3])];
+		push @profiles, [($i,trim($d[0]),trim($d[1]),trim($d[2]))];
 	}
 	close(f);
 	print "profiles read in sample $i [$file]: $#profiles\n";
 	$i++;
 }
+close(cc);
 
 ##sort on the gene identifier (string value) and on the sample identifier
 @ps = sort{uc($a->[1]) cmp uc($b->[1]) || $a->[0] <=> $b->[0]}@profiles;
@@ -48,11 +64,19 @@ $completedSamples = 0;
 
 for($j = 0; $j <= $#ps; $j++)
 {
+#	print "0: $ps[$j][0]\n";
+#	print "1: $ps[$j][1]\n";
+#	print "2: $ps[$j][2]\n";
+#	print "3: $ps[$j][3]\n";
+#	print "memo: $geneMemo\n";
+#	sleep(1);
+	
 	if($ps[$j][1] eq $geneMemo)
 	{
 		push @combine, [($ps[$j][0],$ps[$j][1],$ps[$j][2],$ps[$j][3])];
 		$completion[$ps[$j][0]] = 1;
 		$completedSamples++;
+#		print "completed samples: $completedSamples and entries in combined: $#combine\n";
 	}
 	else
 	{
@@ -64,26 +88,29 @@ for($j = 0; $j <= $#ps; $j++)
 				if($completion[$k] == 0)
 				{
 					## the [1] is the gene identifier
-					push @combine, [($k, $ps[$j-1][1], 1, "1 0")];
+					push @combine, [($k, $ps[$j-1][1], 1, "1 0 ")];
 				}
 			}
-			##sort on the sample identifier, to have the components in the same order
-			@cs = sort{$a->[0] <=> $b->[0]}@combine;
 		}
+		##sort on the sample identifier, to have the components in the same order
+		@cs = sort{$a->[0] <=> $b->[0]}@combine;
 		
 		##process the expression profiles, to ensure the same length on all expression profiles
 		$maxLen = 0;
 		for($k = 0; $k <= $#files; $k++)
 		{
-			if($combine[$k][2] > $maxLen){$maxLen = $combine[$k][2]}
+			if($cs[$k][2] > $maxLen){$maxLen = $cs[$k][2]}
 		}
+		
+#		print "overall max length is: $maxLen and final number of entries: $#cs\n";
+		
 		for($k = 0; $k <= $#files; $k++)
 		{
-			print out "$combine[$k][0], $combine[$k][1], $maxLen, $combine[$k][3]";
-			if($combine[$k][2] < $maxLen)
+			print out "$cs[$k][0], $cs[$k][1], $maxLen, $cs[$k][3]";
+			if($cs[$k][2] < $maxLen)
 			{
 				##0 padding for shorter versions of the gene
-				for($l = $combine[$k][2]; $l <= $maxLen; $l++)
+				for($l = $cs[$k][2]; $l <= $maxLen; $l++)
 				{
 				print out "0 "
 				}
@@ -97,6 +124,7 @@ for($j = 0; $j <= $#ps; $j++)
 		{$completion[$k] = 0;}
 		$completedSamples = 0;
 		
+		$#combine = -1;
 		push @combine, [($ps[$j][0],$ps[$j][1],$ps[$j][2],$ps[$j][3])];
 		$completion[$ps[$j][0]] = 1;
 		$completedSamples++;
